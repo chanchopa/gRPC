@@ -14,7 +14,6 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: "1.22"
-          cache: false
 
       - name: Install protoc
         run: |
@@ -27,30 +26,19 @@ jobs:
           go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
 
-      - name: Find proto files
-        run: |
-          echo "=== All .proto files ==="
-          find . -name "*.proto" -type f
-          echo "=== Current directory content ==="
-          ls -la
-
       - name: Generate payment
         run: |
-          export PATH="$PATH:$(go env GOPATH)/bin"
           mkdir -p gen/payment
-          # ИЗМЕНИТЕ ПУТЬ НИЖЕ на тот, который увидите в отладке
           protoc --go_out=gen --go_opt=paths=source_relative \
                  --go-grpc_out=gen --go-grpc_opt=paths=source_relative \
-                 payment/payment.proto   # ← замените на правильный путь
+                 payment/payment.proto
 
       - name: Generate order
         run: |
-          export PATH="$PATH:$(go env GOPATH)/bin"
           mkdir -p gen/order
-          # ИЗМЕНИТЕ ПУТЬ НИЖЕ на тот, который увидите в отладке
           protoc --go_out=gen --go_opt=paths=source_relative \
                  --go-grpc_out=gen --go-grpc_opt=paths=source_relative \
-                 order/order.proto       # ← замените на правильный путь
+                 order/order.proto
 
       - name: Push generated code to ap2-generated repo
         env:
@@ -64,4 +52,4 @@ jobs:
           git config user.name  "GitHub Actions"
           git add .
           git diff --cached --quiet || git commit -m "chore: regenerate proto $(date -u +%Y-%m-%dT%H:%M:%SZ)"
-          git push origin HEAD:main
+          git push
