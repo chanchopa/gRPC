@@ -40,16 +40,3 @@ jobs:
                  --go-grpc_out=gen --go-grpc_opt=paths=source_relative \
                  proto-repo/order/order.proto
 
-      - name: Push generated code to ap2-generated repo
-        env:
-          GEN_TOKEN: ${{ secrets.GEN_REPO_TOKEN }}
-        run: |
-          git clone https://x-access-token:${GEN_TOKEN}@github.com/ArlanAidarov/ap2-generated.git out
-          cp -r gen/payment out/payment
-          cp -r gen/order   out/order
-          cd out
-          git config user.email "actions@github.com"
-          git config user.name  "GitHub Actions"
-          git add .
-          git diff --cached --quiet || git commit -m "chore: regenerate proto $(date -u +%Y-%m-%dT%H:%M:%SZ)"
-          git push
