@@ -31,14 +31,14 @@ jobs:
           mkdir -p gen/payment
           protoc --go_out=gen --go_opt=paths=source_relative \
                  --go-grpc_out=gen --go-grpc_opt=paths=source_relative \
-                 payment/payment.proto
+                 proto-repo/payment/payment.proto
 
       - name: Generate order
         run: |
           mkdir -p gen/order
           protoc --go_out=gen --go_opt=paths=source_relative \
                  --go-grpc_out=gen --go-grpc_opt=paths=source_relative \
-                 order/order.proto
+                 proto-repo/order/order.proto
 
       - name: Push generated code to ap2-generated repo
         env:
