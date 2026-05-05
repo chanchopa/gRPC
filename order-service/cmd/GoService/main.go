@@ -1,8 +1,11 @@
 package main
 
 import (
+	"context"
 	"log"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"order-service/internal/app"
 )
@@ -20,7 +23,10 @@ func main() {
 		log.Fatalf("[order-service] failed to initialize: %v", err)
 	}
 
-	if err := application.Run(); err != nil {
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
+
+	if err := application.Run(ctx); err != nil {
 		log.Fatalf("[order-service] server error: %v", err)
 	}
 }

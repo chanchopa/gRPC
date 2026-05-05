@@ -20,8 +20,8 @@ func NewPostgresOrderRepository(db *sql.DB) *PostgresOrderRepository {
 
 func (r *PostgresOrderRepository) Save(ctx context.Context, order *domain.Order) error {
 	query := `
-		INSERT INTO orders (id, customer_id, item_name, amount, status, idempotency_key, created_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)`
+		INSERT INTO orders (id, customer_id, customer_email, item_name, amount, status, idempotency_key, created_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`
 
 	var ikey interface{}
 	if order.IdempotencyKey != "" {
@@ -33,6 +33,7 @@ func (r *PostgresOrderRepository) Save(ctx context.Context, order *domain.Order)
 	_, err := r.db.ExecContext(ctx, query,
 		order.ID,
 		order.CustomerID,
+		order.CustomerEmail,
 		order.ItemName,
 		order.Amount,
 		order.Status,
@@ -47,7 +48,7 @@ func (r *PostgresOrderRepository) Save(ctx context.Context, order *domain.Order)
 
 func (r *PostgresOrderRepository) FindByID(ctx context.Context, id string) (*domain.Order, error) {
 	query := `
-		SELECT id, customer_id, item_name, amount, status, created_at
+		SELECT id, customer_id, customer_email, item_name, amount, status, created_at
 		FROM orders WHERE id = $1
 	`
 	row := r.db.QueryRowContext(ctx, query, id)
@@ -57,6 +58,7 @@ func (r *PostgresOrderRepository) FindByID(ctx context.Context, id string) (*dom
 	err := row.Scan(
 		&order.ID,
 		&order.CustomerID,
+		&order.CustomerEmail,
 		&order.ItemName,
 		&order.Amount,
 		&order.Status,
@@ -90,7 +92,7 @@ func (r *PostgresOrderRepository) FindByIdempotencyKey(ctx context.Context, key 
 		return nil, errors.New("empty idempotency key")
 	}
 	query := `
-		SELECT id, customer_id, item_name, amount, status, created_at
+		SELECT id, customer_id, customer_email, item_name, amount, status, created_at
 		FROM orders WHERE idempotency_key = $1
 	`
 	row := r.db.QueryRowContext(ctx, query, key)
@@ -100,6 +102,7 @@ func (r *PostgresOrderRepository) FindByIdempotencyKey(ctx context.Context, key 
 	err := row.Scan(
 		&order.ID,
 		&order.CustomerID,
+		&order.CustomerEmail,
 		&order.ItemName,
 		&order.Amount,
 		&order.Status,

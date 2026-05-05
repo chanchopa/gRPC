@@ -10,7 +10,7 @@ type OrderRepository interface {
 }
 
 type PaymentClient interface {
-	Authorize(ctx context.Context, orderID string, amount int64) (PaymentResult, error)
+	Authorize(ctx context.Context, orderID string, amount int64, customerEmail string) (PaymentResult, error)
 }
 
 type PaymentResult struct {

@@ -1,0 +1,117 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: ap2_postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./db-init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - ap2_net
+
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: ap2_rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+    networks:
+      - ap2_net
+
+  order-service:
+    build:
+      context: .
+      dockerfile: order-service/Dockerfile
+    container_name: ap2_order_service
+    environment:
+      ORDER_DB_DSN: postgres://order_user:1234@postgres:5432/order_db?sslmode=disable
+      ORDER_HTTP_PORT: "8080"
+      ORDER_GRPC_PORT: "9090"
+      PAYMENT_GRPC_ADDR: payment-service:9091
+    ports:
+      - "8080:8080"
+      - "9090:9090"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      payment-service:
+        condition: service_started
+    networks:
+      - ap2_net
+
+  payment-service:
+    build:
+      context: .
+      dockerfile: payment-service/Dockerfile
+    container_name: ap2_payment_service
+    environment:
+      PAYMENT_DB_DSN: postgres://payment_user:1234@postgres:5432/payment_db?sslmode=disable
+      PAYMENT_HTTP_PORT: "8081"
+      PAYMENT_GRPC_PORT: "9091"
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
+      PAYMENT_EXCHANGE: payments.exchange
+      PAYMENT_ROUTING_KEY: payment.completed
+      PAYMENT_QUEUE: payment.completed
+      PAYMENT_DLX: payments.dlx
+      PAYMENT_DLQ: payment.completed.dlq
+    ports:
+      - "8081:8081"
+      - "9091:9091"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - ap2_net
+
+  notification-service:
+    build:
+      context: .
+      dockerfile: notification-service/Dockerfile
+    container_name: ap2_notification_service
+    environment:
+      NOTIFICATION_DB_DSN: postgres://notification_user:1234@postgres:5432/notification_db?sslmode=disable
+      NOTIFICATION_HTTP_PORT: "8082"
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
+      PAYMENT_EXCHANGE: payments.exchange
+      PAYMENT_ROUTING_KEY: payment.completed
+      PAYMENT_QUEUE: payment.completed
+      PAYMENT_DLX: payments.dlx
+      PAYMENT_DLQ: payment.completed.dlq
+      MAX_RETRIES: "3"
+      PREFETCH_COUNT: "10"
+    ports:
+      - "8082:8082"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - ap2_net
+
+volumes:
+  postgres_data:
+
+networks:
+  ap2_net:
+    driver: bridge

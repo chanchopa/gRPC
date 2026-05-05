@@ -1,0 +1,10 @@
+.git
+.gitignore
+.idea
+.vscode
+**/.env
+**/*.exe
+**/*.test
+**/*.out
+README.md
+docs/

@@ -4,9 +4,9 @@ import (
 	"net/http"
 	"strings"
 
-	"order-service/internal/usecase"
-
 	"github.com/gin-gonic/gin"
+
+	"order-service/internal/usecase"
 )
 
 type OrderHandler struct {
@@ -24,9 +24,20 @@ func (h *OrderHandler) RegisterRoutes(r *gin.Engine) {
 }
 
 type createOrderRequest struct {
-	CustomerID string `json:"customer_id" binding:"required"`
-	ItemName   string `json:"item_name"   binding:"required"`
-	Amount     int64  `json:"amount"      binding:"required"`
+	CustomerID    string `json:"customer_id" binding:"required"`
+	CustomerEmail string `json:"customer_email" binding:"required,email"`
+	ItemName      string `json:"item_name" binding:"required"`
+	Amount        int64  `json:"amount" binding:"required"`
+}
+
+type orderResponse struct {
+	ID            string `json:"id"`
+	CustomerID    string `json:"customer_id"`
+	CustomerEmail string `json:"customer_email"`
+	ItemName      string `json:"item_name"`
+	Amount        int64  `json:"amount"`
+	Status        string `json:"status"`
+	CreatedAt     string `json:"created_at"`
 }
 
 func (h *OrderHandler) CreateOrder(c *gin.Context) {
@@ -40,6 +51,7 @@ func (h *OrderHandler) CreateOrder(c *gin.Context) {
 
 	input := usecase.CreateOrderInput{
 		CustomerID:     req.CustomerID,
+		CustomerEmail:  req.CustomerEmail,
 		ItemName:       req.ItemName,
 		Amount:         req.Amount,
 		IdempotencyKey: idempotencyKey,
@@ -59,7 +71,15 @@ func (h *OrderHandler) CreateOrder(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusCreated, order)
+	c.JSON(http.StatusCreated, orderResponse{
+		ID:            order.ID,
+		CustomerID:    order.CustomerID,
+		CustomerEmail: order.CustomerEmail,
+		ItemName:      order.ItemName,
+		Amount:        order.Amount,
+		Status:        order.Status,
+		CreatedAt:     order.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+	})
 }
 
 func (h *OrderHandler) GetOrder(c *gin.Context) {
@@ -79,7 +99,15 @@ func (h *OrderHandler) GetOrder(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, order)
+	c.JSON(http.StatusOK, orderResponse{
+		ID:            order.ID,
+		CustomerID:    order.CustomerID,
+		CustomerEmail: order.CustomerEmail,
+		ItemName:      order.ItemName,
+		Amount:        order.Amount,
+		Status:        order.Status,
+		CreatedAt:     order.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+	})
 }
 
 func (h *OrderHandler) CancelOrder(c *gin.Context) {
@@ -95,11 +123,18 @@ func (h *OrderHandler) CancelOrder(c *gin.Context) {
 		case strings.Contains(err.Error(), "not found"):
 			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		default:
-			// Business rule violations (e.g., cancelling a Paid order)
 			c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
 		}
 		return
 	}
 
-	c.JSON(http.StatusOK, order)
+	c.JSON(http.StatusOK, orderResponse{
+		ID:            order.ID,
+		CustomerID:    order.CustomerID,
+		CustomerEmail: order.CustomerEmail,
+		ItemName:      order.ItemName,
+		Amount:        order.Amount,
+		Status:        order.Status,
+		CreatedAt:     order.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+	})
 }

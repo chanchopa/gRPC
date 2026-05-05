@@ -15,6 +15,7 @@ const (
 type Order struct {
 	ID             string
 	CustomerID     string
+	CustomerEmail  string
 	ItemName       string
 	Amount         int64
 	Status         string
@@ -25,6 +26,9 @@ type Order struct {
 func (o *Order) Validate() error {
 	if o.CustomerID == "" {
 		return errors.New("customer_id is required")
+	}
+	if o.CustomerEmail == "" {
+		return errors.New("customer_email is required")
 	}
 	if o.ItemName == "" {
 		return errors.New("item_name is required")

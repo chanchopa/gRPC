@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"time"
 
-	"order-service/internal/domain"
-
 	"github.com/google/uuid"
+
+	"order-service/internal/domain"
 )
 
 type OrderUseCase struct {
@@ -24,13 +24,13 @@ func NewOrderUseCase(repo domain.OrderRepository, paymentClient domain.PaymentCl
 
 type CreateOrderInput struct {
 	CustomerID     string
+	CustomerEmail  string
 	ItemName       string
 	Amount         int64
 	IdempotencyKey string
 }
 
 func (uc *OrderUseCase) CreateOrder(ctx context.Context, input CreateOrderInput) (*domain.Order, error) {
-
 	if input.IdempotencyKey != "" {
 		existing, err := uc.repo.FindByIdempotencyKey(ctx, input.IdempotencyKey)
 		if err == nil && existing != nil {
@@ -39,12 +39,14 @@ func (uc *OrderUseCase) CreateOrder(ctx context.Context, input CreateOrderInput)
 	}
 
 	order := &domain.Order{
-		ID:         uuid.NewString(),
-		CustomerID: input.CustomerID,
-		ItemName:   input.ItemName,
-		Amount:     input.Amount,
-		Status:     domain.StatusPending,
-		CreatedAt:  time.Now().UTC(),
+		ID:             uuid.NewString(),
+		CustomerID:     input.CustomerID,
+		CustomerEmail:  input.CustomerEmail,
+		ItemName:       input.ItemName,
+		Amount:         input.Amount,
+		Status:         domain.StatusPending,
+		CreatedAt:      time.Now().UTC(),
+		IdempotencyKey: input.IdempotencyKey,
 	}
 
 	if err := order.Validate(); err != nil {
@@ -55,9 +57,8 @@ func (uc *OrderUseCase) CreateOrder(ctx context.Context, input CreateOrderInput)
 		return nil, fmt.Errorf("failed to save order: %w", err)
 	}
 
-	result, err := uc.paymentClient.Authorize(ctx, order.ID, order.Amount)
+	result, err := uc.paymentClient.Authorize(ctx, order.ID, order.Amount, order.CustomerEmail)
 	if err != nil {
-
 		order.MarkFailed()
 		_ = uc.repo.Update(ctx, order)
 		return nil, fmt.Errorf("payment service unavailable: %w", err)

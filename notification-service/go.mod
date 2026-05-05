@@ -1,15 +1,11 @@
-module payment-service
+module notification-service
 
 go 1.22
 
 require (
-	github.com/ArlanAidarov/ap2-generated v1.0.0
 	github.com/gin-gonic/gin v1.10.0
-	github.com/google/uuid v1.6.0
 	github.com/lib/pq v1.10.9
 	github.com/rabbitmq/amqp091-go v1.10.0
-	google.golang.org/grpc v1.64.0
-	google.golang.org/protobuf v1.34.1
 )
 
 require (
@@ -37,8 +33,6 @@ require (
 	golang.org/x/net v0.25.0 // indirect
 	golang.org/x/sys v0.20.0 // indirect
 	golang.org/x/text v0.15.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20240521202816-d264139d666e // indirect
+	google.golang.org/protobuf v1.34.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
-
-replace github.com/ArlanAidarov/ap2-generated => ../generated-repo

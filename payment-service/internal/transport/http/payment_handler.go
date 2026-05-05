@@ -4,9 +4,9 @@ import (
 	"net/http"
 	"strings"
 
-	"payment-service/internal/usecase"
-
 	"github.com/gin-gonic/gin"
+
+	"payment-service/internal/usecase"
 )
 
 type PaymentHandler struct {
@@ -23,8 +23,9 @@ func (h *PaymentHandler) RegisterRoutes(r *gin.Engine) {
 }
 
 type authorizePaymentRequest struct {
-	OrderID string `json:"order_id" binding:"required"`
-	Amount  int64  `json:"amount"   binding:"required"`
+	OrderID       string `json:"order_id" binding:"required"`
+	Amount        int64  `json:"amount" binding:"required"`
+	CustomerEmail string `json:"customer_email" binding:"required,email"`
 }
 
 func (h *PaymentHandler) AuthorizePayment(c *gin.Context) {
@@ -35,8 +36,9 @@ func (h *PaymentHandler) AuthorizePayment(c *gin.Context) {
 	}
 
 	input := usecase.AuthorizeInput{
-		OrderID: req.OrderID,
-		Amount:  req.Amount,
+		OrderID:       req.OrderID,
+		Amount:        req.Amount,
+		CustomerEmail: req.CustomerEmail,
 	}
 
 	payment, err := h.uc.AuthorizePayment(c.Request.Context(), input)

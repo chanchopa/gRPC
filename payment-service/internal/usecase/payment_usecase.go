@@ -3,23 +3,26 @@ package usecase
 import (
 	"context"
 	"fmt"
-
-	"payment-service/internal/domain"
+	"log"
 
 	"github.com/google/uuid"
+
+	"payment-service/internal/domain"
 )
 
 type PaymentUseCase struct {
-	repo domain.PaymentRepository
+	repo      domain.PaymentRepository
+	publisher domain.EventPublisher
 }
 
-func NewPaymentUseCase(repo domain.PaymentRepository) *PaymentUseCase {
-	return &PaymentUseCase{repo: repo}
+func NewPaymentUseCase(repo domain.PaymentRepository, publisher domain.EventPublisher) *PaymentUseCase {
+	return &PaymentUseCase{repo: repo, publisher: publisher}
 }
 
 type AuthorizeInput struct {
-	OrderID string
-	Amount  int64
+	OrderID       string
+	Amount        int64
+	CustomerEmail string
 }
 
 func (uc *PaymentUseCase) AuthorizePayment(ctx context.Context, input AuthorizeInput) (*domain.Payment, error) {
@@ -43,6 +46,20 @@ func (uc *PaymentUseCase) AuthorizePayment(ctx context.Context, input AuthorizeI
 
 	if err := uc.repo.Save(ctx, payment); err != nil {
 		return nil, fmt.Errorf("failed to save payment: %w", err)
+	}
+
+	if uc.publisher != nil {
+		event := domain.PaymentCompletedEvent{
+			MessageID:     uuid.NewString(),
+			OrderID:       payment.OrderID,
+			Amount:        payment.Amount,
+			CustomerEmail: input.CustomerEmail,
+			Status:        payment.Status,
+		}
+		if err := uc.publisher.PublishPaymentCompleted(ctx, event); err != nil {
+			log.Printf("[payment-service] WARN failed to publish event for order %s: %v",
+				payment.OrderID, err)
+		}
 	}
 
 	return payment, nil
